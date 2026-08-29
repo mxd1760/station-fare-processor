@@ -1,5 +1,10 @@
 # 2. Basic Event Data
 
+Date: 2026-08-29
+
+## Status
+Accepted
+
 ## Context
 This helps build out a foundational structure to make further decisions
 
