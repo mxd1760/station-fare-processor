@@ -1,4 +1,7 @@
-# Basic Event Data
+# 2. Basic Event Data
+
+## Context
+This helps build out a foundational structure to make further decisions
 
 ## Decision
 The basic event will consist of 3 fields
@@ -6,7 +9,6 @@ The basic event will consist of 3 fields
  - card_id : the users card
  - timestamp : when the transaction was performed
 
-## Context
-This helps build out a foundational structure to make further decisions
-
 ## Consequences
+ - kiosks will be required to be in or out
+ - kiosk position tracking will be important in calculating fares
