@@ -1,0 +1,64 @@
+[map]
+
+[map.stations.lowell]
+name = "Lowell"
+kiosks = ["entk_1","entk_2","entk_3","exk_1","exk_2","exk_3"]
+
+[map.stations.north_billerica]
+name = "North Billerica"
+kiosks = ["entk_4","entk_5","entk_6","exk_4","exk_5","exk_6"]
+
+[map.stations.wilmington]
+name = "Wilmington"
+kiosks = ["entk_7","entk_8","entk_9","exk_7","exk_8","exk_9"]
+
+[map.stations.north_wilmington]
+name = "North Wilmington"
+kiosks = ["entk_10","entk_11","entk_12","exk_10","exk_11","exk_12"]
+
+[map.stations.ballardvale]
+name = "Ballardvale"
+kiosks = ["entk_13","entk_14","entk_15","exk_13","exk_14","exk_15"]
+
+[map.stations.andover]
+name = "Andover"
+kiosks = ["entk_16","entk_17","entk_18","exk_16","exk_17","exk_18"]
+
+[map.stations.reading]
+name = "Reading"
+kiosks = ["entk_19","entk_20","entk_21","exk_19","exk_20","exk_21"]
+
+[[map.connections]]
+from = "lowell"
+to = "north_billerica"
+distance = 1
+
+[[map.connections]]
+from = "lowell"
+to = "ballardvale"
+distance = 3
+
+[[map.connections]]
+from = "north_billerica"
+to = "wilmington"
+distance = 2
+
+[[map.connections]]
+from = "ballardvale"
+to = "wilmington"
+distance = 2
+
+[[map.connections]]
+from = "ballardvale"
+to = "north_wilmington"
+distance = 1.6
+
+[[map.connections]]
+from = "ballardvale"
+to = "andover"
+distance = 0.8
+
+[[map.connections]]
+from = "north_wilmington"
+to = "reading"
+distance = 1.4

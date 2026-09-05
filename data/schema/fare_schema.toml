@@ -1,0 +1,11 @@
+# fare schema.toml
+
+[lookup_tables.kiosk_to_lu]
+description = "Maps a kiosk ID to the logical unit it belongs to."
+key = "string"
+value = "logical_unit"
+
+[lookup_tables.lu_pair_to_fare]
+description = "Maps an ordered pair of logical units to a fare."
+key = ["logical_unit", "logical_unit"]
+value = "int"

@@ -1,0 +1,15 @@
+# map schema.toml
+
+[map]
+stations = "Vec<Station>"
+connections = "Vec<Connection>"
+
+[station]
+name = "string"
+id = "string"
+kiosks = "Vec<String>"
+
+[connection]
+station_id_from = "string"
+station_id_to = "string"
+distance = "float"
