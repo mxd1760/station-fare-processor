@@ -1,0 +1,22 @@
+mode = "distance"
+max_fare = 400
+
+[[brackets]]
+max_distance = 6
+fare = 178
+
+[[brackets]]
+max_distance = 11
+fare = 209
+
+[[brackets]]
+max_distance = 19
+fare = 252
+
+[[brackets]]
+max_distance = 27
+fare = 293
+
+[[brackets]]
+max_distance = 40
+fare = 324

@@ -1,5 +1,8 @@
 use serde::{Serialize, Deserialize};
 
+#[cfg(feature = "fare-data")]
+pub mod fare_data;
+
 #[derive(Serialize,Deserialize,Debug,Clone, PartialEq, Eq)]
 pub struct TapEventData {
     pub kiosk_id: String,
@@ -21,6 +24,8 @@ impl TapEvent{
         Self { event_id, timestamp: timestamp.to_owned(), event_data:event_data.clone()}
     }
 }
+
+
 
 
 

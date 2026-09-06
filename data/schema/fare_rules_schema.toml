@@ -1,0 +1,10 @@
+mode = "string"
+rules = "Vec<RuleItem>"
+max_fare = "int"
+
+RuleItem = "DistanceRuleItem" or ...
+
+[DistanceRuleItem]
+max_distance = "float"
+fare = "int"
+
