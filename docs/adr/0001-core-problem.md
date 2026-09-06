@@ -17,7 +17,8 @@ state consistent across networked nodes under duplicate, out-of-order,
 or delayed events (idempotency, eventual consistency).
 
 ## Consequences
-- Hardware skills (I2C card reader, SPI display, UART/WiFi networking,
-  RTOS for local concurrency) are required.
+- system state cannot be assumed to arrive in order
+- components must tolerate duplicate events
+- server-side reconciliation becomes important
 - Future ADRs needed: how nodes reconcile with a central ledger, what
   happens during network partition, event schema design.
