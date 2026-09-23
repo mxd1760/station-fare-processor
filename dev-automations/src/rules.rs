@@ -27,9 +27,10 @@ pub struct DistanceItem {
 #[derive(Debug)]
 pub enum FareProcessingRules {
     Distance(i64, Vec<DistanceItem>),
-    Segment(i64),
-    Zone(i64),
-    Pair(i64),
+    // Segment(i64),
+    // Zone(i64),
+    // Pair(i64),
+    _Flat(i64)
 }
 
 impl From<FareRulesConfig> for FareProcessingRules {

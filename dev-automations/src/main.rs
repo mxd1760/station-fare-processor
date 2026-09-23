@@ -4,7 +4,6 @@ use std::{
     collections::HashMap,
     error::Error,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 use crate::{
@@ -16,8 +15,9 @@ use crate::{
 mod map;
 mod mqtt;
 mod rules;
+mod simulator;
 
-fn main() {
+fn main() -> Result<(),Box<dyn Error>> {
     let matches = command!()
         .propagate_version(true)
         .subcommand_required(true)
@@ -49,10 +49,13 @@ fn main() {
                         .help("Path to output file"),
                 ),
         )
+        .subcommand(
+            Command::new("simulate").about("starts simulator with given map")
+        )
         .get_matches();
 
     match matches.subcommand() {
-        Some(("test-mqtt", _sub_matches)) => test_mqtt(),
+        Some(("test-mqtt", _sub_matches)) => Ok(test_mqtt()),
         Some(("solve-fares", sub_matches)) => {
             let map_path = sub_matches.get_one::<PathBuf>("map").unwrap();
             let rules_path = sub_matches.get_one::<PathBuf>("rules").unwrap();
@@ -60,7 +63,10 @@ fn main() {
                 Some(v) => v,
                 None => &PathBuf::from("./data/generated/output.fares"),
             };
-            solve_fares(map_path, rules_path, output_path).unwrap();
+            solve_fares(map_path, rules_path, output_path)
+        },
+        Some(("simulate",_sub_matches)) =>{
+            Ok(simulator::main()?)
         }
         _ => todo!(),
     }
@@ -88,7 +94,7 @@ fn solve_fares(
         }
     }
     println!("{fares:?}");
-    save_fares(output_file, fares);
+    save_fares(output_file, fares)?;
     Ok(())
 }
 
@@ -175,13 +181,13 @@ fn floyd_warshall(
     }
 }
 
-fn dijkstra(
-    _map: StationMap,
-    _max_fare: i64,
-    _distance_fares_table: Vec<DistanceItem>,
-) -> GeneratedFareData {
-    todo!();
-}
+// fn dijkstra(
+//     _map: StationMap,
+//     _max_fare: i64,
+//     _distance_fares_table: Vec<DistanceItem>,
+// ) -> GeneratedFareData {
+//     todo!();
+// }
 
 fn save_fares(path: &Path, fares: GeneratedFareData) -> Result<(), Box<dyn Error>> {
     let encoded = postcard::to_stdvec(&fares)?;
