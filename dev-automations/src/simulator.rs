@@ -23,19 +23,24 @@ impl SimulationApp{
     fn mock()->Self{
         let a = Point { x: 100.0, y: 150.0 };
         let b = Point { x: 300.0, y: 150.0 };
-        let c = Point { x: 300.0, y: 300.0 };
+        let c = Point { x: 400.0, y: 300.0 };
+        let d = Point { x: 500.0, y: 150.0 };
         let text_offset = Point{ x: 0.0,y:50.0};
 
 
         Self { visualization: vec![
-            Element::Path(Path::Line { start: a.clone(), end: b.clone(), width: 5.0, color: None }),// 1-2 line
-            Element::Path(Path::Line { start: b.clone(), end: c.clone(), width: 5.0, color: None }),// 2-3 line
-            Element::Circle { center: a.clone(), radius: 12.0 , color: Some(egui::Color32::RED) },// station 1 circle
-            Element::Circle { center: b.clone(), radius: 12.0 , color: Some(egui::Color32::GREEN) },// station 2 circle
-            Element::Circle { center: c.clone(), radius: 12.0 , color: Some(egui::Color32::BLUE) },// station 3 circle
+            Element::Path(Path::Line { start: a.clone(), end: b.clone(), width: 5.0, color: Some(egui::Color32::RED) }),// 1-2 line
+            Element::Path(Path::Line { start: b.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::GREEN) }),// 2-3 line
+            Element::Path(Path::Line { start: b.clone(), end: d.clone(), width: 5.0, color: Some(egui::Color32::BLUE)}),// 2-4 line
+            Element::Path(Path::Line { start: d.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::PURPLE) }),// 3-4 line
+            Element::Circle { center: a.clone(), radius: 12.0 , color: None },// station 1 circle
+            Element::Circle { center: b.clone(), radius: 12.0 , color: None },// station 2 circle
+            Element::Circle { center: c.clone(), radius: 12.0 , color: None },// station 3 circle
+            Element::Circle { center: d.clone(), radius: 12.0 , color: None },// station 4 circle
             Element::Text { position: a.clone().plus(&text_offset), text: "Station 1".to_owned(), color: None },// station 1 text
             Element::Text { position: b.clone().plus(&text_offset), text: "Station 2".to_owned(), color: None },// station 2 text
             Element::Text { position: c.clone().plus(&text_offset), text: "Station 3".to_owned(), color: None },// station 3 text
+            Element::Text { position: d.clone().plus(&text_offset), text: "Station 4".to_owned(), color: None },// station 4 text
         ] }
     }
 }

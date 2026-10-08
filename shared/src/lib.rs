@@ -18,7 +18,7 @@ pub struct TapEvent {
 }
 
 impl TapEvent {
-    fn new(timestamp: &str, event_data: &TapEventData) -> Self {
+    fn _new(timestamp: &str, event_data: &TapEventData) -> Self {
         let event_id = format! {"{}-{}-{}-{}",event_data.kiosk_id,event_data.card_id,event_data.kiosk_transaction_number,timestamp};
         Self {
             event_id,
@@ -59,7 +59,7 @@ mod tests {
         };
         let current_date_time_str = "2026-09-01 12:30:00";
 
-        let original_full = TapEvent::new(current_date_time_str, &original_ted);
+        let original_full = TapEvent::_new(current_date_time_str, &original_ted);
 
         let encoded = serde_json::to_string(&original_full).unwrap();
         let decoded: TapEvent = serde_json::from_str(&encoded).unwrap();
@@ -79,7 +79,7 @@ mod tests {
         };
         let current_date_time_str = "2026-09-01 12:30:00";
 
-        let original_full = TapEvent::new(current_date_time_str, &original_ted);
+        let original_full = TapEvent::_new(current_date_time_str, &original_ted);
 
         assert_eq!(
             original_full.event_id,
