@@ -1,0 +1,4 @@
+[alias]
+test-mqtt = "run -p dev-automations -- test-mqtt"
+calculate-map = "run -p dev-automations -- calculate-map"
+simulate = "run -p dev-automations -- simulate"
