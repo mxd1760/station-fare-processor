@@ -1,12 +1,18 @@
+use std::{collections::HashMap, path::PathBuf};
+
 use eframe::egui::{self, Painter};
+
+use crate::map::{StationMap, load_map};
 
 pub fn main() -> eframe::Result {
     let options = eframe::NativeOptions::default();
+    let path = PathBuf::from("data/maps/simple_test_map.toml".to_owned());
+    let station_map = load_map(&path).unwrap();
 
     eframe::run_native(
         "Station Fare Processor Simulation",
         options,
-        Box::new(|_cc| Ok(Box::new(SimulationApp::mock()))),
+        Box::new(|_cc| Ok(Box::new(SimulationApp::from_station_map(&station_map)))),
     )
 }
 
@@ -29,10 +35,10 @@ impl SimulationApp{
 
 
         Self { visualization: vec![
-            Element::Path(Path::Line { start: a.clone(), end: b.clone(), width: 5.0, color: Some(egui::Color32::RED) }),// 1-2 line
-            Element::Path(Path::Line { start: b.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::GREEN) }),// 2-3 line
-            Element::Path(Path::Line { start: b.clone(), end: d.clone(), width: 5.0, color: Some(egui::Color32::BLUE)}),// 2-4 line
-            Element::Path(Path::Line { start: d.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::PURPLE) }),// 3-4 line
+            Element::Path(DrawingPath::Line { start: a.clone(), end: b.clone(), width: 5.0, color: Some(egui::Color32::RED) }),// 1-2 line
+            Element::Path(DrawingPath::Line { start: b.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::GREEN) }),// 2-3 line
+            Element::Path(DrawingPath::Line { start: b.clone(), end: d.clone(), width: 5.0, color: Some(egui::Color32::BLUE)}),// 2-4 line
+            Element::Path(DrawingPath::Line { start: d.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::PURPLE) }),// 3-4 line
             Element::Circle { center: a.clone(), radius: 12.0 , color: None },// station 1 circle
             Element::Circle { center: b.clone(), radius: 12.0 , color: None },// station 2 circle
             Element::Circle { center: c.clone(), radius: 12.0 , color: None },// station 3 circle
@@ -43,10 +49,53 @@ impl SimulationApp{
             Element::Text { position: d.clone().plus(&text_offset), text: "Station 4".to_owned(), color: None },// station 4 text
         ] }
     }
+
+    fn from_station_map(map:&StationMap) -> Self{
+        let mut elements = Vec::new();
+        let mut positions = HashMap::new();
+
+        for (index, name) in map.stations.keys().enumerate() {
+            let position = Point {
+                x: index as f32 * 100.0 + 100.0,
+                y: 200.0 + (index as f32 * 1.7).sin() * 100.0,
+            };
+            let text_offset = Point{ x: 0.0,y:50.0};
+            positions.insert(name, position);
+                
+            elements.push(Element::Circle {
+                center: position,
+                radius: 10.0,
+                color: None,
+            });
+
+            elements.push(Element::Text {
+                position: position.clone().plus(&text_offset),
+                text: name.clone(),
+                color: None,
+            });
+        }
+
+        for connection in &map.connections {
+            if let (Some(&start), Some(&end)) = (
+                positions.get(&connection.from),
+                positions.get(&connection.to),
+            ) {
+                elements.push(Element::Path(DrawingPath::Line {
+                    start,
+                    end,
+                    width: 2.0,
+                    color: None,
+                }));
+            }
+        }
+
+        Self{ visualization:elements }
+
+    }
 }
 
 
-enum Path{
+enum DrawingPath{
     Line {
         start: Point,
         end: Point,
@@ -59,7 +108,7 @@ enum Path{
 }
 
 enum Element {
-    Path(Path),
+    Path(DrawingPath),
     Circle {
         center: Point,
         radius: f32,
@@ -77,7 +126,7 @@ impl Element{
         match self{
             Element::Path(p)=>{
                 match p{
-                    Path::Line { start, end, width, color } => {
+                    DrawingPath::Line { start, end, width, color } => {
                         let track = egui::Stroke::new(*width, match color { Some(v)=>*v,None=>egui::Color32::LIGHT_GRAY});
                         painter.line_segment([start.to_pos2(*rect), end.to_pos2(*rect)], track);
                     }
