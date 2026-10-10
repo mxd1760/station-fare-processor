@@ -6,7 +6,7 @@ use crate::map::{StationMap, load_map};
 
 pub fn main() -> eframe::Result {
     let options = eframe::NativeOptions::default();
-    let path = PathBuf::from("data/maps/simple_test_map.toml".to_owned());
+    let path = PathBuf::from("data/maps/wheel_test_map.toml".to_owned());
     let station_map = load_map(&path).unwrap();
 
     eframe::run_native(

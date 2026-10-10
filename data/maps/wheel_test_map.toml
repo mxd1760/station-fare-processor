@@ -1,0 +1,110 @@
+[stations.center]
+name="center"
+kiosks=["entk_0","exk_0"]
+
+[stations.one]
+name="one"
+kiosks=["entk_1","exk_1"]
+
+[stations.two]
+name="two"
+kiosks=["entk_2","exk_2"]
+
+[stations.three]
+name="three"
+kiosks=["entk_3","exk_3"]
+
+[stations.four]
+name="four"
+kiosks=["entk_4","exk_4"]
+
+[stations.five]
+name="five"
+kiosks=["entk_5","exk_5"]
+
+[stations.six]
+name="six"
+kiosks=["entk_6","exk_6"]
+
+[stations.seven]
+name="seven"
+kiosks=["entk_7","exk_7"]
+
+[stations.eight]
+name="eight"
+kiosks=["entk_8","exk_8"]
+
+[[connections]]
+from = "center"
+to = "one"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "two"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "three"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "four"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "five"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "six"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "seven"
+distance = 1
+
+[[connections]]
+from = "center"
+to = "eight"
+distance = 1
+
+[[connections]]
+from = "one"
+to = "two"
+distance = 1
+
+[[connections]]
+from = "two"
+to = "three"
+distance = 1
+
+[[connections]]
+from = "three"
+to = "four"
+distance = 1
+
+[[connections]]
+from = "four"
+to = "five"
+distance = 1
+
+[[connections]]
+from = "five"
+to = "six"
+distance = 1
+
+[[connections]]
+from = "six"
+to = "seven"
+distance = 1
+
+[[connections]]
+from = "seven"
+to = "eight"
+distance = 1

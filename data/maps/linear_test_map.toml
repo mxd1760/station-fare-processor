@@ -1,0 +1,39 @@
+[stations.one]
+name = "one"
+kiosks = ["entk_1","entk_2","entk_3","exk_1","exk_2","exk_3"]
+
+[stations.two]
+name = "two"
+kiosks = ["entk_4","entk_5","entk_6","exk_4","exk_5","exk_6"]
+
+[stations.three]
+name = "three"
+kiosks = ["entk_7","entk_8","entk_9","exk_7","exk_8","exk_9"]
+
+[stations.four]
+name = "four"
+kiosks = ["entk_10","entk_11","entk_12","exk_10","exk_11","exk_12"]
+
+[stations.five]
+name = "five"
+kiosks = ["entk_13","entk_14","entk_15","exk_13","exk_14","exk_15"]
+
+[[connections]]
+from = "one"
+to = "two"
+distance = 1
+
+[[connections]]
+from = "two"
+to = "three"
+distance = 1
+
+[[connections]]
+from = "three"
+to = "four"
+distance = 1
+
+[[connections]]
+from = "four"
+to = "five"
+distance = 1
