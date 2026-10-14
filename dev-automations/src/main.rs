@@ -1,4 +1,4 @@
-use clap::{Command, arg, command};
+use clap::{Arg, Command, arg, command};
 use shared::fare_data::GeneratedFareData;
 use std::{
     collections::HashMap,
@@ -17,7 +17,8 @@ mod mqtt;
 mod rules;
 mod simulator;
 
-fn main() -> Result<(),Box<dyn Error>> {
+
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = command!()
         .propagate_version(true)
         .subcommand_required(true)
@@ -50,7 +51,7 @@ fn main() -> Result<(),Box<dyn Error>> {
                 ),
         )
         .subcommand(
-            Command::new("simulate").about("starts simulator with given map")
+            Command::new("simulate").about("starts simulator with given map").arg(Arg::new("path").value_parser(clap::value_parser!(PathBuf)).required(false))
         )
         .get_matches();
 
@@ -64,9 +65,11 @@ fn main() -> Result<(),Box<dyn Error>> {
                 None => &PathBuf::from("./data/generated/output.fares"),
             };
             solve_fares(map_path, rules_path, output_path)
-        },
-        Some(("simulate",_sub_matches)) =>{
-            Ok(simulator::main()?)
+        }
+        Some(("simulate", sub_matches)) => {
+            let path = sub_matches.get_one::<PathBuf>("path");
+
+            Ok(simulator::main(path)?)
         }
         _ => todo!(),
     }

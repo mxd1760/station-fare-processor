@@ -4,10 +4,14 @@ use eframe::egui::{self, Painter};
 
 use crate::map::{StationMap, load_map};
 
-pub fn main() -> eframe::Result {
+pub fn main(path_arg:Option<&PathBuf>) -> eframe::Result {
     let options = eframe::NativeOptions::default();
-    let path = PathBuf::from("data/maps/wheel_test_map.toml".to_owned());
-    let station_map = load_map(&path).unwrap();
+    let path = if let Some(p) = path_arg{
+        p
+    } else {
+        &PathBuf::from("data/maps/simple_test_map.toml".to_owned())
+    };
+    let station_map = load_map(path).unwrap();
 
     eframe::run_native(
         "Station Fare Processor Simulation",
