@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, time::Duration};
 
-use eframe::egui::{self, Painter};
+use eframe::{egui::{self, Painter}, wgpu::naga::MathFunction::Atan2};
 
 use crate::map::{StationMap, load_map};
 
@@ -21,9 +21,90 @@ pub fn main(path_arg:Option<&PathBuf>) -> eframe::Result {
 }
 
 
+type TrainId = i64;
+type PassengerId = i64;
+enum Actor{
+    Train{
+        id:TrainId,
+        position:TrainPos,
+        route:Vec<String>,
+        route_index:usize,
+        passengers:Vec<PassengerId>,
+        max_capacity:usize,
+    },
+    Passenger{
+        id:PassengerId,
+        card_id:String,
+        position:PassengerPos,
+        destination_station:String,
+        route:Vec<String>,
+        route_index:usize
+    },
+}
+enum TrainPos{
+    Enroute{
+        connection:DrawingPath,
+        interpolation:f32
+    },
+    AtStation(String)
+}
+enum PassengerPos{
+    OnTrain(TrainId),
+    AtStation(String),
+    // Roaming(Point),
+}
+
+const TRAIN_SIZE_X:f32 = 30.0;
+const TRAIN_SIZE_Y:f32 = 15.0;
+
+impl Actor{
+    fn update(&mut self){
+        match self{
+            Actor::Train { id, position, route, route_index, passengers: num_passengers, max_capacity } => {
+
+            },
+            Actor::Passenger { id, card_id, position, destination_station, route, route_index } => todo!(),
+        }
+    }
+    fn draw(&self, painter:&Painter,rect:&egui::Rect){
+        match self {
+            Actor::Train { position, id:_, route: _, route_index: _, passengers: _, max_capacity: _ } => {
+                match position{
+                    TrainPos::Enroute { connection, interpolation } => {
+                        match connection{
+                            DrawingPath::Line { start, end, width:_, color:_ } => {
+                                let delta = end.clone().minus(&start);
+                                let mut center = start.clone();
+                                center.plus(&delta.clone().times(&interpolation));
+                                let size = egui::vec2(TRAIN_SIZE_X,TRAIN_SIZE_Y);
+                                let angle = delta.y.atan2(delta.x);
+                                draw_rotated_rect(
+                                    painter,
+                                    center.to_pos2(*rect),
+                                    size,
+                                    angle,
+                                    egui::Color32::BLUE
+                                )
+                            },
+                        }
+                    },
+                    TrainPos::AtStation(s) => {
+
+                    },
+                }
+            },
+            Actor::Passenger { id, card_id, position, destination_station, route, route_index } => {
+
+            },
+        }
+    }
+}
+
+
 #[derive(Default)]
 struct SimulationApp{
-    visualization: Vec<Element>
+    static_elements: Vec<Element>,
+    actors: Vec<Actor>
 }
 
 impl SimulationApp{
@@ -35,7 +116,7 @@ impl SimulationApp{
         let text_offset = Point{ x: 0.0,y:50.0};
 
 
-        Self { visualization: vec![
+        Self { static_elements: vec![
             Element::Path(DrawingPath::Line { start: a.clone(), end: b.clone(), width: 5.0, color: Some(egui::Color32::RED) }),// 1-2 line
             Element::Path(DrawingPath::Line { start: b.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::GREEN) }),// 2-3 line
             Element::Path(DrawingPath::Line { start: b.clone(), end: d.clone(), width: 5.0, color: Some(egui::Color32::BLUE)}),// 2-4 line
@@ -48,7 +129,8 @@ impl SimulationApp{
             Element::Text { position: b.clone().plus(&text_offset), text: "Station 2".to_owned(), color: None },// station 2 text
             Element::Text { position: c.clone().plus(&text_offset), text: "Station 3".to_owned(), color: None },// station 3 text
             Element::Text { position: d.clone().plus(&text_offset), text: "Station 4".to_owned(), color: None },// station 4 text
-        ] }
+        ],
+            actors: vec![]}
     }
 
     fn from_station_map(map:&StationMap) -> Self{
@@ -84,12 +166,19 @@ impl SimulationApp{
             }
         }
 
-        Self{ visualization:elements }
+        let mock_train_connection = DrawingPath::Line { start: Point{x:100.0,y:200.0}, end: Point{x:300.0,y:400.0}, width: 4.9, color: None };
 
+        elements.push(Element::Path(mock_train_connection.clone()));
+
+        Self{ 
+            static_elements:elements, 
+            actors: vec![
+                Actor::Train { id: 1, position: TrainPos::Enroute { connection: mock_train_connection, interpolation: 0.5 }, route: vec![], route_index: 0, passengers: vec![], max_capacity: 10 
+            }] }
     }
 }
 
-
+#[derive(Clone)]
 enum DrawingPath{
     Line {
         start: Point,
@@ -102,6 +191,7 @@ enum DrawingPath{
     //Complex Curve
 }
 
+#[derive(Clone)]
 enum Element {
     Path(DrawingPath),
     Circle {
@@ -163,8 +253,18 @@ impl Point{
         self.y += other.y;
         *self
     }
+    fn minus(&mut self,other:&Self)->Self{
+        self.x -= other.x;
+        self.y -= other.y;
+        *self
+    }
     fn to_pos2(&self,rect:egui::Rect)->egui::Pos2{
         rect.left_top()+egui::vec2(self.x,self.y)
+    }
+    fn times(&mut self, other:&f32)->Self{
+        self.x *= other;
+        self.y *= other;
+        *self
     }
 }
 
@@ -183,11 +283,22 @@ impl eframe::App for SimulationApp {
             let rect = response.rect;
             let font = egui::FontId::proportional(16.0);
 
-            for element in &self.visualization{
+            for element in &self.static_elements{
                 element.draw(&painter,&rect,&font);
             }
-
+            for actor in &self.actors{
+                actor.draw(&painter,&rect);
+            }
         });
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        for actor in &mut self.actors{
+            actor.update();
+        }
+        ctx.request_repaint_after(
+            Duration::from_millis(50)
+        )
     }
 }
 
@@ -322,4 +433,41 @@ fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
         .zip(positions)
         .map(|(name, (x, y))| (name, Point { x:x+LEFT, y }))
         .collect()
+}
+
+
+fn draw_rotated_rect(
+    painter: &egui::Painter,
+    center: egui::Pos2,
+    size: egui::Vec2,
+    angle: f32,
+    color: egui::Color32,
+) {
+    let half_width = size.x / 2.0;
+    let half_height = size.y / 2.0;
+
+    let corners = [
+        egui::vec2(-half_width, -half_height),
+        egui::vec2(half_width, -half_height),
+        egui::vec2(half_width, half_height),
+        egui::vec2(-half_width, half_height),
+    ];
+
+    let points: Vec<egui::Pos2> = corners
+        .iter()
+        .map(|corner| {
+            let rotated = egui::vec2(
+                corner.x * angle.cos() - corner.y * angle.sin(),
+                corner.x * angle.sin() + corner.y * angle.cos(),
+            );
+
+            center + rotated
+        })
+        .collect();
+
+    painter.add(egui::Shape::convex_polygon(
+        points,
+        color,
+        egui::Stroke::NONE,
+    ));
 }
