@@ -4,7 +4,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct Station {
-    pub name: String,
+    #[serde(rename="name")]
+    pub _name: String,
     pub kiosks: Vec<String>,
 }
 
