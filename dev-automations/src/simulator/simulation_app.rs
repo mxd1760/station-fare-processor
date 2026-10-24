@@ -24,10 +24,10 @@ impl SimulationApp{
             Element::Path(DrawingPath::Line { start: b.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::GREEN) }),// 2-3 line
             Element::Path(DrawingPath::Line { start: b.clone(), end: d.clone(), width: 5.0, color: Some(egui::Color32::BLUE)}),// 2-4 line
             Element::Path(DrawingPath::Line { start: d.clone(), end: c.clone(), width: 5.0, color: Some(egui::Color32::PURPLE) }),// 3-4 line
-            Element::Circle { center: a.clone(), radius: 12.0 , color: None },// station 1 circle
-            Element::Circle { center: b.clone(), radius: 12.0 , color: None },// station 2 circle
-            Element::Circle { center: c.clone(), radius: 12.0 , color: None },// station 3 circle
-            Element::Circle { center: d.clone(), radius: 12.0 , color: None },// station 4 circle
+            Element::Circle { center: a.clone(), radius: 12.0 , color: None ,name:None},// station 1 circle
+            Element::Circle { center: b.clone(), radius: 12.0 , color: None ,name:None},// station 2 circle
+            Element::Circle { center: c.clone(), radius: 12.0 , color: None ,name:None},// station 3 circle
+            Element::Circle { center: d.clone(), radius: 12.0 , color: None ,name:None},// station 4 circle
             Element::Text { position: a.clone().plus(&text_offset), text: "Station 1".to_owned(), color: None },// station 1 text
             Element::Text { position: b.clone().plus(&text_offset), text: "Station 2".to_owned(), color: None },// station 2 text
             Element::Text { position: c.clone().plus(&text_offset), text: "Station 3".to_owned(), color: None },// station 3 text
@@ -45,6 +45,7 @@ impl SimulationApp{
                 center: *position,
                 radius: 10.0,
                 color: None,
+                name:Some(name.clone())
             });
             
             let text_offset = Point{x:0.0, y:50.0};
@@ -68,16 +69,13 @@ impl SimulationApp{
                 }));
             }
         }
-
-        let mock_train_connection = DrawingPath::Line { start: Point{x:100.0,y:200.0}, end: Point{x:300.0,y:400.0}, width: 4.9, color: None };
-
-        elements.push(Element::Path(mock_train_connection.clone()));
+        let train = Actor::train_from(elements.last().unwrap()).unwrap();
 
         Self{ 
             static_elements:elements, 
             actors: vec![
-                Actor::Train { id: 1, position: TrainPos::Enroute {connection:mock_train_connection,interpolation:0.5, going_forward: true }, route: vec![], route_index: 0, passengers: vec![], max_capacity: 10 
-            }] }
+                train
+            ]}
     }
 }
 

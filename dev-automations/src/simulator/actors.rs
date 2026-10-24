@@ -1,6 +1,6 @@
 use eframe::egui::{self, Painter};
 
-use crate::simulator::{drawable_elements::DrawingPath, simulator_util::draw_rotated_rect};
+use crate::simulator::{drawable_elements::{DrawingPath, Element}, simulator_util::draw_rotated_rect};
 
 
 
@@ -86,7 +86,7 @@ impl Actor{
                         }
                     },
                     TrainPos::AtStation(s) => {
-
+                        
                     },
                 }
             },
@@ -95,5 +95,27 @@ impl Actor{
             },
         }
     }
+    pub fn train_from(element:&Element)->Option<Self>{
+        match element{
+            Element::Path(drawing_path) => Some(
+                Actor::Train { 
+                id: 1, 
+                position: TrainPos::Enroute {
+                    connection: drawing_path.clone(),
+                    interpolation: 0.5, 
+                    going_forward: true 
+                }, 
+                route: vec![], 
+                route_index: 0, 
+                passengers: vec![], 
+                max_capacity: 10 
+            }),
+            Element::Circle { center, radius, color, name } => todo!(),
+            Element::Text { position, text, color } => None,
+        }
+
+        
+    }
+
 }
 

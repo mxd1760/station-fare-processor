@@ -19,7 +19,8 @@ pub enum Element {
     Circle {
         center: Point,
         radius: f32,
-        color:Option<egui::Color32>
+        color:Option<egui::Color32>,
+        name:Option<String>,
     },
     Text {
         position: Point,
@@ -39,7 +40,7 @@ impl Element{
                     }
                 }
             },
-            Element::Circle { center, radius, color } => {
+            Element::Circle { center, radius, color, name: _ } => {
                 let real_color = match color {
                     Some(c) => c,
                     None => &egui::Color32::LIGHT_GRAY,
