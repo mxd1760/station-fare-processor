@@ -4,12 +4,11 @@ use eframe::egui;
 
 use crate::{map::StationMap, simulator::drawable_elements::Point};
 
-
 // TODO: BENCHMARK ME
-pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
+pub fn solve_station_positioning(map: &StationMap) -> HashMap<String, Point> {
     const WIDTH: f32 = 500.0;
     const HEIGHT: f32 = 400.0;
-    const LEFT:f32 = 80.0;
+    const LEFT: f32 = 80.0;
     const ITERATIONS: usize = 150;
     const INITIAL_TEMPERATURE: f32 = 80.0;
     const MIN_DISTANCE: f32 = 0.01;
@@ -32,8 +31,7 @@ pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
     // Store positions and displacement vectors by index.
     let mut positions: Vec<(f32, f32)> = (0..count)
         .map(|i| {
-            let angle = std::f32::consts::TAU * i as f32
-                / count as f32;
+            let angle = std::f32::consts::TAU * i as f32 / count as f32;
             let radius = 0.35 * WIDTH.min(HEIGHT);
 
             (
@@ -74,8 +72,7 @@ pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
                 let dx = positions[i].0 - positions[j].0;
                 let dy = positions[i].1 - positions[j].1;
 
-                let distance =
-                    (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
+                let distance = (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
 
                 // Unit direction multiplied by k² / distance.
                 let force = k * k / (distance * distance);
@@ -94,8 +91,7 @@ pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
             let dx = positions[from].0 - positions[to].0;
             let dy = positions[from].1 - positions[to].1;
 
-            let distance =
-                (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
+            let distance = (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
 
             // Unit direction multiplied by distance² / k.
             let force = distance / k;
@@ -109,8 +105,7 @@ pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
         }
 
         // 3. Limit movement and gradually cool the system.
-        let temperature = INITIAL_TEMPERATURE
-            * (1.0 - iteration as f32 / ITERATIONS as f32);
+        let temperature = INITIAL_TEMPERATURE * (1.0 - iteration as f32 / ITERATIONS as f32);
 
         for i in 0..count {
             let (dx, dy) = displacement[i];
@@ -123,21 +118,17 @@ pub fn solve_station_positioning(map:&StationMap)->HashMap<String,Point>{
             }
 
             // Keep the layout inside the drawing area.
-            positions[i].0 =
-                positions[i].0.clamp(20.0, WIDTH - 20.0);
-            positions[i].1 =
-                positions[i].1.clamp(20.0, HEIGHT - 20.0);
+            positions[i].0 = positions[i].0.clamp(20.0, WIDTH - 20.0);
+            positions[i].1 = positions[i].1.clamp(20.0, HEIGHT - 20.0);
         }
     }
 
     names
         .into_iter()
         .zip(positions)
-        .map(|(name, (x, y))| (name, Point { x:x+LEFT, y }))
+        .map(|(name, (x, y))| (name, Point { x: x + LEFT, y }))
         .collect()
 }
-
-
 
 pub fn draw_rotated_rect(
     painter: &egui::Painter,

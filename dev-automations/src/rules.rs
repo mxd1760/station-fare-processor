@@ -30,7 +30,7 @@ pub enum FareProcessingRules {
     // Segment(i64),
     // Zone(i64),
     // Pair(i64),
-    _Flat(i64)
+    _Flat(i64),
 }
 
 impl From<FareRulesConfig> for FareProcessingRules {

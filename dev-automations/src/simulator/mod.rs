@@ -2,15 +2,14 @@ use std::path::PathBuf;
 
 use crate::{map::load_map, simulator::simulation_app::SimulationApp};
 
-
-mod simulator_util;
 mod actors;
-mod simulation_app;
 mod drawable_elements;
+mod simulation_app;
+mod simulator_util;
 
-pub fn main(path_arg:Option<&PathBuf>) -> eframe::Result {
+pub fn main(path_arg: Option<&PathBuf>) -> eframe::Result {
     let options = eframe::NativeOptions::default();
-    let path = if let Some(p) = path_arg{
+    let path = if let Some(p) = path_arg {
         p
     } else {
         &PathBuf::from("data/maps/simple_test_map.toml".to_owned())

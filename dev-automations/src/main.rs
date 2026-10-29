@@ -17,7 +17,6 @@ mod mqtt;
 mod rules;
 mod simulator;
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = command!()
         .propagate_version(true)
@@ -51,7 +50,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ),
         )
         .subcommand(
-            Command::new("simulate").about("starts simulator with given map").arg(Arg::new("path").value_parser(clap::value_parser!(PathBuf)).required(false))
+            Command::new("simulate")
+                .about("starts simulator with given map")
+                .arg(
+                    Arg::new("path")
+                        .value_parser(clap::value_parser!(PathBuf))
+                        .required(false),
+                ),
         )
         .get_matches();
 
