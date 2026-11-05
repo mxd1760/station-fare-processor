@@ -15,6 +15,20 @@ pub enum DrawingPath {
     //Complex Curve
 }
 
+impl DrawingPath{
+    pub fn station_b(&self)->StationId{
+        match self{
+            DrawingPath::Line { start: _, end, width: _, color: _ } => end.0.clone(),
+        }
+    }
+
+    pub fn station_a(&self)->StationId{
+        match self{
+            DrawingPath::Line { start, end: _, width: _, color: _ } => start.0.clone(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum Element {
     Path(DrawingPath),

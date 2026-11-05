@@ -165,3 +165,118 @@ pub fn draw_rotated_rect(
         egui::Stroke::NONE,
     ));
 }
+
+
+use std::collections::HashSet;
+
+use crate::simulator::drawable_elements::{
+    DrawingPath, Element, StationId,
+};
+
+
+// TODO: BENCHMARK ME
+pub fn find_route_dijkstra(
+    static_elements: &[Element],
+    start: &StationId,
+    destination: &StationId,
+) -> Option<Vec<StationId>> {
+
+    // Build an adjacency list from the drawing elements.
+    // Each connection is bidirectional and weighted by its length.
+    let mut graph: HashMap<StationId, Vec<(StationId, f64)>> = HashMap::new();
+
+    for element in static_elements {
+
+        // TODO: distances might work better if calculated differently.
+        if let Element::Path(DrawingPath::Line { start, end, .. }) = element {
+            let dx = end.1.x - start.1.x;
+            let dy = end.1.y - start.1.y;
+            let distance = ((dx * dx + dy * dy) as f64).sqrt();
+
+            graph.entry(start.0.clone())
+                .or_default()
+                .push((end.0.clone(), distance));
+
+            graph.entry(end.0.clone())
+                .or_default()
+                .push((start.0.clone(), distance));
+        }
+    }
+
+    if start == destination {
+        return Some(vec![start.clone()]);
+    }
+
+    if !graph.contains_key(start) || !graph.contains_key(destination) {
+        return None;
+    }
+
+    // Initialize distances and predecessor tracking.
+    let mut distances: HashMap<StationId, f64> = HashMap::new();
+    let mut previous: HashMap<StationId, StationId> = HashMap::new();
+    let mut unvisited: HashSet<StationId> = graph.keys().cloned().collect();
+
+    distances.insert(start.clone(), 0.0);
+
+    // Dijkstra
+    while !unvisited.is_empty() {
+
+        // Find the unvisited station with the lowest known distance.
+        let current = unvisited.iter()
+            .filter_map(|id| {
+                distances.get(id).map(|distance| (id, *distance))
+            })
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+            .map(|(id, _)| id.clone());
+
+        let current = match current {
+            Some(id) => id,
+            None => break,
+        };
+
+        if current == *destination {
+            break;
+        }
+
+        unvisited.remove(&current);
+
+        if let Some(connections) = graph.get(&current) {
+            for (neighbor, distance) in connections {
+
+                if !unvisited.contains(neighbor) {
+                    continue;
+                }
+
+                let new_distance = distances[&current] + distance;
+
+                let old_distance = distances
+                    .get(neighbor)
+                    .copied()
+                    .unwrap_or(f64::INFINITY);
+
+                if new_distance < old_distance {
+                    distances.insert(neighbor.clone(), new_distance);
+                    previous.insert(neighbor.clone(), current.clone());
+                }
+            }
+        }
+    }
+
+    // No route was found.
+    if !previous.contains_key(destination) {
+        return None;
+    }
+
+    // Reconstruct the route by following predecessors backwards.
+    let mut route = vec![destination.clone()];
+    let mut current = destination.clone();
+
+    while current != *start {
+        current = previous.get(&current)?.clone();
+        route.push(current.clone());
+    }
+
+    route.reverse();
+
+    Some(route)
+}
