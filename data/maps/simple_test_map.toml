@@ -63,6 +63,7 @@ distance = 11
 
 
 [routes.reading-andover]
+name="reading-andover"
 mode="linear"
 stations=[
     "reading",
@@ -72,7 +73,7 @@ stations=[
 ]
 
 [routes.ballardvale_loop]
-id="ballardvale_loop"
+name="ballardvale_loop"
 mode="loop"
 stations=[
     "ballardvale",

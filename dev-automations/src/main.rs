@@ -64,8 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .value_parser(clap::value_parser!(String))
                         .default_value("one")
                         .help("Selects the train route configuration to use"),
-                )
-                ,
+                ),
         )
         .get_matches();
 
@@ -83,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(("simulate", sub_matches)) => {
             let path = sub_matches.get_one::<PathBuf>("path");
             let config = sub_matches.get_one::<String>("configuration");
-            Ok(simulator::main(path,config)?)
+            Ok(simulator::main(path, config)?)
         }
         _ => todo!(),
     }

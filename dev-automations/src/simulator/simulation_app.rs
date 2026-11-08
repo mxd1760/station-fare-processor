@@ -3,7 +3,8 @@ use std::{collections::HashMap, time::Duration};
 use eframe::egui;
 
 use crate::{
-    map::{StationMap, TrainConfiguration}, simulator::{
+    map::{StationMap, TrainConfiguration},
+    simulator::{
         actors::Actor,
         drawable_elements::{DrawingPath, Element, Point},
         simulator_util::solve_station_positioning,
@@ -14,6 +15,7 @@ use crate::{
 pub struct SimulationApp {
     static_elements: Vec<Element>,
     actors: Vec<Actor>,
+    show_info_panel: bool,
 }
 
 impl SimulationApp {
@@ -96,11 +98,12 @@ impl SimulationApp {
                 }, // station 4 text
             ],
             actors: vec![],
+            show_info_panel: true,
         }
     }
 
-    pub fn from_station_map(map: &StationMap,cfg_schema:Option<&String>) -> Self {
-        let trains:&Vec<TrainConfiguration> = match cfg_schema{
+    pub fn from_station_map(map: &StationMap, cfg_schema: Option<&String>) -> Self {
+        let trains: &Vec<TrainConfiguration> = match cfg_schema {
             Some(name) => &map.train_cfg_schema.get(name).unwrap().trains,
             None => &map.train_cfg_schema.get("one").unwrap().trains,
         };
@@ -140,7 +143,7 @@ impl SimulationApp {
         }
 
         let mut actors = vec![];
-        for train in trains{
+        for train in trains {
             let route = map.routes.get(&train.route_id).unwrap();
             actors.push(Actor::train_from_config_and_route(&train, &route).unwrap());
         }
@@ -148,12 +151,51 @@ impl SimulationApp {
         Self {
             static_elements: elements,
             actors,
+            show_info_panel: true,
         }
     }
 }
 
 impl eframe::App for SimulationApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        if self.show_info_panel {
+            egui::Panel::right("info").show(ui, |ui| {
+                ui.label(egui::RichText::new("Trains").size(18.0).strong());
+                ui.indent("Trains",|ui|
+                {
+                    self.actors
+                    .iter()
+                    .filter(|v| matches!(v, Actor::Train { .. }))
+                    .for_each(|train| {
+                        let (id, color) = match train {
+                                Actor::Train { id, color, .. } => (id, color),
+                                Actor::Passenger { .. } => unreachable!(),
+                        };
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(&train.info_title()).size(14.0).strong());
+                            
+                            let (rect, _) = ui
+                                .allocate_exact_size(egui::vec2(12.0, 12.0), egui::Sense::hover());
+                            ui.painter()
+                                .circle_filled(rect.center(), 6.0, color.unwrap());
+                        });
+                        ui.indent(id,|ui|{
+                            ui.label(&train.info_subtitle());
+                        });
+                    });
+                });
+                ui.label(egui::RichText::new("Passengers").size(18.0).strong());
+                ui.indent("Passengers",|ui|{
+                    self.actors
+                    .iter()
+                    .filter(|v| matches!(v, Actor::Passenger { .. }))
+                    .for_each(|_passenger| {
+                        //TODO
+                    })
+                })
+            });
+        }
+
         egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Station Fare Processor");
 
