@@ -60,3 +60,48 @@ distance = 20
 from = "north_wilmington"
 to = "reading"
 distance = 11
+
+
+[routes.reading-andover]
+mode="linear"
+stations=[
+    "reading",
+    "north_wilmington",
+    "ballardvale",
+    "andover",
+]
+
+[routes.ballardvale_loop]
+id="ballardvale_loop"
+mode="loop"
+stations=[
+    "ballardvale",
+    "lowell",
+    "north_billerica",
+    "wilmington",
+    "ballardvale",
+]
+
+[[train_cfg_schema.one.trains]]
+name = "train_1"
+color = "BLUE"
+route_id = "reading-andover"
+starting_index = 0
+
+[[train_cfg_schema.one.trains]]
+name = "train_2"
+color = "BLUE"
+route_id = "reading-andover"
+starting_index = 3
+
+[[train_cfg_schema.one.trains]]
+name = "train_3"
+color = "RED"
+route_id = "ballardvale_loop"
+starting_index = 0
+
+[[train_cfg_schema.one.trains]]
+name = "train_4"
+color = "RED"
+route_id = "ballardvale_loop"
+starting_index = 2

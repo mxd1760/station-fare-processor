@@ -1,5 +1,4 @@
 use std::{collections::HashMap, error::Error, path::Path};
-
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -20,6 +19,27 @@ pub struct Connection {
 pub struct StationMap {
     pub stations: HashMap<String, Station>,
     pub connections: Vec<Connection>,
+    pub routes: HashMap<String, Route>,
+    pub train_cfg_schema: HashMap<String, TrainCfgSchema>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrainCfgSchema{
+    pub trains: Vec<TrainConfiguration>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Route {
+    pub mode: crate::simulator::actors::RouteMode,
+    pub stations: Vec<String>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrainConfiguration{
+    pub name:String,
+    pub color:String,
+    pub route_id:String,
+    pub starting_index:usize,
 }
 
 pub fn load_map(path: &Path) -> Result<StationMap, Box<dyn Error>> {

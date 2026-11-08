@@ -166,13 +166,9 @@ pub fn draw_rotated_rect(
     ));
 }
 
-
 use std::collections::HashSet;
 
-use crate::simulator::drawable_elements::{
-    DrawingPath, Element, StationId,
-};
-
+use crate::simulator::drawable_elements::{DrawingPath, Element, StationId};
 
 // TODO: BENCHMARK ME
 pub fn find_route_dijkstra(
@@ -180,24 +176,24 @@ pub fn find_route_dijkstra(
     start: &StationId,
     destination: &StationId,
 ) -> Option<Vec<StationId>> {
-
     // Build an adjacency list from the drawing elements.
     // Each connection is bidirectional and weighted by its length.
     let mut graph: HashMap<StationId, Vec<(StationId, f64)>> = HashMap::new();
 
     for element in static_elements {
-
         // TODO: distances might work better if calculated differently.
         if let Element::Path(DrawingPath::Line { start, end, .. }) = element {
             let dx = end.1.x - start.1.x;
             let dy = end.1.y - start.1.y;
             let distance = ((dx * dx + dy * dy) as f64).sqrt();
 
-            graph.entry(start.0.clone())
+            graph
+                .entry(start.0.clone())
                 .or_default()
                 .push((end.0.clone(), distance));
 
-            graph.entry(end.0.clone())
+            graph
+                .entry(end.0.clone())
                 .or_default()
                 .push((start.0.clone(), distance));
         }
@@ -220,12 +216,10 @@ pub fn find_route_dijkstra(
 
     // Dijkstra
     while !unvisited.is_empty() {
-
         // Find the unvisited station with the lowest known distance.
-        let current = unvisited.iter()
-            .filter_map(|id| {
-                distances.get(id).map(|distance| (id, *distance))
-            })
+        let current = unvisited
+            .iter()
+            .filter_map(|id| distances.get(id).map(|distance| (id, *distance)))
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(id, _)| id.clone());
 
@@ -242,17 +236,13 @@ pub fn find_route_dijkstra(
 
         if let Some(connections) = graph.get(&current) {
             for (neighbor, distance) in connections {
-
                 if !unvisited.contains(neighbor) {
                     continue;
                 }
 
                 let new_distance = distances[&current] + distance;
 
-                let old_distance = distances
-                    .get(neighbor)
-                    .copied()
-                    .unwrap_or(f64::INFINITY);
+                let old_distance = distances.get(neighbor).copied().unwrap_or(f64::INFINITY);
 
                 if new_distance < old_distance {
                     distances.insert(neighbor.clone(), new_distance);

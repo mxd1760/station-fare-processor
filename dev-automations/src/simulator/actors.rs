@@ -1,18 +1,34 @@
 use eframe::egui::{self, Color32, Painter};
-use rand::{random_range, seq::IndexedRandom};
+use rand::seq::IndexedRandom;
+use serde::{Deserialize, Serialize};
+use chrono::prelude::*;
 
-use crate::simulator::{
-    drawable_elements::{DrawingPath, Element, Point, StationId}, simulator_util::{draw_rotated_rect, find_route_dijkstra},
-};
+use crate::{map::{Route, TrainConfiguration}, simulator::{
+    drawable_elements::{DrawingPath, Element, Point, StationId},
+    simulator_util::{draw_rotated_rect, find_route_dijkstra},
+}};
 
-type TrainId = i64;
-type PassengerId = i64;
+type TrainId = String;
+type PassengerId = String;
 
-const TRAIN_TICKS_AT_STATION:i32 = 30;
-const TRAIN_SIZE_AT_STATION:f32 = 8.0;
+const TRAIN_TICKS_AT_STATION: i32 = 30;
+const TRAIN_SIZE_AT_STATION: f32 = 8.0;
 const TRAIN_SIZE_X: f32 = 30.0;
 const TRAIN_SIZE_Y: f32 = 15.0;
 const TRAIN_SPEED: f32 = 0.01;
+const TRAIN_PASSANGER_CAP: usize= 10;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum RouteMode {
+    #[serde(rename = "random")]
+    RandomConnection,
+    #[serde(rename = "random-route")]
+    RandomRoute,
+    #[serde(rename = "linear")]
+    LinearRoute,
+    #[serde(rename = "loop")]
+    LoopRoute,
+}
 
 pub enum Actor {
     Train {
@@ -23,8 +39,8 @@ pub enum Actor {
         route_index: usize,
         passengers: Vec<PassengerId>,
         max_capacity: usize,
-        wait_counter:i32,
-        use_random_path:bool,
+        wait_counter: i32,
+        route_mode: RouteMode,
     },
     Passenger {
         id: PassengerId,
@@ -49,8 +65,6 @@ pub enum PassengerPos {
     // Roaming(Point),
 }
 
-
-
 impl Actor {
     pub fn update(&mut self, static_elements: &Vec<Element>) {
         match self {
@@ -61,7 +75,10 @@ impl Actor {
                 route_index,
                 passengers: _num_passengers,
                 max_capacity: _,
-                color: _, wait_counter, use_random_path } => {
+                color: _,
+                wait_counter,
+                route_mode,
+            } => {
                 match position {
                     TrainPos::Enroute {
                         connection,
@@ -154,35 +171,67 @@ impl Actor {
                         }
                     }
                     TrainPos::AtStation(here, _) => {
-                        if *wait_counter>0{
+                        if *wait_counter > 0 {
                             *wait_counter -= 1;
-                        }else{
-                            *position = if *use_random_path{
-                                Self::next_train_path_by_random_choice(here,static_elements)
-                            } else { 
-                                if route.len()==0 || *route_index >= route.len()-1{
-                                    let mut to:StationId=here.clone();
-                                    while to == *here{
-                                        to = static_elements
-                                        .iter()
-                                        .filter_map(|v| 
-                                            match v{
-                                                Element::Path(_) => None,
-                                                Element::Circle { name, .. } => Some(name.clone()),
-                                                Element::Text { .. } => None,
-                                            }
-                                        ).collect::<Vec<StationId>>()
-                                        .choose(&mut rand::rng())
-                                        .unwrap().to_string();
-                                    }
-                                    println!("Going to {}",to);
-                                    *route = find_route_dijkstra(static_elements,here,&to).unwrap();
-                                    *route_index = 0;
+                        } else {
+                            *position = match *route_mode {
+                                RouteMode::RandomConnection => {
+                                    Self::next_train_path_by_random_choice(here, static_elements)
                                 }
-                                *route_index += 1;
-                                Self::next_train_path_by_route(here,route.get(*route_index).unwrap(),static_elements)
+                                RouteMode::RandomRoute => {
+                                    if route.len() == 0 || *route_index >= route.len() - 1 {
+                                        let mut to: StationId = here.clone();
+                                        while to == *here {
+                                            to = static_elements
+                                                .iter()
+                                                .filter_map(|v| match v {
+                                                    Element::Path(_) => None,
+                                                    Element::Circle { name, .. } => {
+                                                        Some(name.clone())
+                                                    }
+                                                    Element::Text { .. } => None,
+                                                })
+                                                .collect::<Vec<StationId>>()
+                                                .choose(&mut rand::rng())
+                                                .unwrap()
+                                                .to_string();
+                                        }
+                                        println!("Going to {}", to);
+                                        *route = find_route_dijkstra(static_elements, here, &to)
+                                            .unwrap();
+                                        *route_index = 0;
+                                    }
+                                    *route_index += 1;
+                                    Self::next_train_path_by_route(
+                                        here,
+                                        route.get(*route_index).unwrap(),
+                                        static_elements,
+                                    )
+                                }
+                                RouteMode::LinearRoute => {
+                                    if *route_index >= route.len()-1{
+                                        *route_index = 0;
+                                        route.reverse();
+                                    }
+                                    *route_index += 1;
+                                    Self::next_train_path_by_route(
+                                        here,
+                                        route.get(*route_index).unwrap(),
+                                        static_elements,
+                                    )
+                                },
+                                RouteMode::LoopRoute => {
+                                    if *route_index >= route.len()-1{
+                                        *route_index = 0;
+                                    }
+                                    *route_index += 1;
+                                    Self::next_train_path_by_route(
+                                        here,
+                                        route.get(*route_index).unwrap(),
+                                        static_elements,
+                                    )
+                                },
                             }
-                            
                         }
                     }
                 }
@@ -200,8 +249,8 @@ impl Actor {
     pub fn draw(&self, painter: &Painter, rect: &egui::Rect) {
         match self {
             Actor::Train {
-                position,
-                color, .. } => match position {
+                position, color, ..
+            } => match position {
                 TrainPos::Enroute {
                     connection,
                     interpolation,
@@ -243,10 +292,10 @@ impl Actor {
             } => {}
         }
     }
-    pub fn train_from(element: &Element) -> Option<Self> {
+    pub fn train_from_element(element: &Element) -> Option<Self> {
         match element {
             Element::Path(drawing_path) => Some(Actor::Train {
-                id: 1,
+                id: Utc::now().to_string(),
                 position: TrainPos::Enroute {
                     connection: drawing_path.clone(),
                     interpolation: 0.0,
@@ -255,10 +304,10 @@ impl Actor {
                 route: vec![],
                 route_index: 0,
                 passengers: vec![],
-                max_capacity: 10,
+                max_capacity: TRAIN_PASSANGER_CAP,
                 color: None,
-                wait_counter:0,
-                use_random_path:false,
+                wait_counter: 0,
+                route_mode: RouteMode::RandomRoute,
             }),
             Element::Circle {
                 center,
@@ -266,15 +315,15 @@ impl Actor {
                 color: _,
                 name,
             } => Some(Actor::Train {
-                id: 1,
+                id: Utc::now().to_string(),
                 position: TrainPos::AtStation(name.clone(), center.clone()),
                 route: vec![],
                 route_index: 0,
                 passengers: vec![],
                 max_capacity: 10,
                 color: None,
-                wait_counter:0,
-                use_random_path:false,
+                wait_counter: 0,
+                route_mode: RouteMode::RandomRoute,
             }),
             Element::Text {
                 position: _,
@@ -283,35 +332,95 @@ impl Actor {
             } => None,
         }
     }
-    fn next_train_path_by_random_choice(from:&StationId,static_elements:&Vec<Element>)->TrainPos{
-        let options:Vec<&DrawingPath> = static_elements.iter().filter_map(|v|{
-            match v{
+    pub fn train_from_config_and_route(cfg:&TrainConfiguration,route:&Route)->Option<Self>{
+        Some(Actor::Train { 
+            id: cfg.name.clone(), 
+            color: match cfg.color.as_str(){
+                "BLACK"=>Some(egui::Color32::BLACK),
+                "DARK_GRAY"|"DARK_GREY" => Some(egui::Color32::DARK_GRAY),
+                "GREY"|"GRAY" =>  Some(egui::Color32::GRAY),
+                "LIGHT_GRAY"|"LIGHT_GREY" => Some(egui::Color32::LIGHT_GRAY),
+                "WHITE"=>Some(egui::Color32::WHITE),
+                "BROWN"=>Some(egui::Color32::BROWN),
+                "DARK_RED"=>Some(egui::Color32::DARK_RED),
+                "RED"=>Some(egui::Color32::RED),
+                "LIGHT_RED"=>Some(egui::Color32::LIGHT_RED),
+                "CYAN"=>Some(egui::Color32::CYAN),
+                "MAGENTA"=>Some(egui::Color32::MAGENTA),
+                "YELLOW"=>Some(egui::Color32::YELLOW),
+                "ORANGE"=>Some(egui::Color32::ORANGE),
+                "LIGHT_YELLOW"=>Some(egui::Color32::LIGHT_YELLOW),
+                "KHAKI"=>Some(egui::Color32::KHAKI),
+                "DARK_GREEN"=>Some(egui::Color32::DARK_GREEN),
+                "GREEN"=>Some(egui::Color32::GREEN),
+                "LIGHT_GREEN"=>Some(egui::Color32::LIGHT_GREEN),
+                "DARK_BLUE"=>Some(egui::Color32::DARK_BLUE),
+                "BLUE"=>Some(egui::Color32::BLUE),
+                "LIGHT_BLUE"=>Some(egui::Color32::LIGHT_BLUE),
+                "PURPLE"=>Some(egui::Color32::PURPLE),
+                "GOLD"=>Some(egui::Color32::GOLD),
+                _=>todo!()// try reading rgb before returning None
+            }, 
+            position: TrainPos::AtStation(route.stations.get(cfg.starting_index)?.clone(),Point{x:100.0,y:100.0}), 
+            route: route.stations.clone(), 
+            route_index: cfg.starting_index, 
+            passengers: vec![], 
+            max_capacity: TRAIN_PASSANGER_CAP, 
+            wait_counter: 0, 
+            route_mode: route.mode.clone()
+        })
+    }
+    
+    fn next_train_path_by_random_choice(
+        from: &StationId,
+        static_elements: &Vec<Element>,
+    ) -> TrainPos {
+        let options: Vec<&DrawingPath> = static_elements
+            .iter()
+            .filter_map(|v| match v {
                 Element::Path(drawing_path) => {
-                    if drawing_path.station_a()==*from || drawing_path.station_b()==*from{
+                    if drawing_path.station_a() == *from || drawing_path.station_b() == *from {
                         Some(drawing_path)
-                    }else{
+                    } else {
                         None
                     }
-                },
+                }
                 Element::Circle { .. } => None,
-                Element::Text {..} => None,
-            }
-        }).collect();
+                Element::Text { .. } => None,
+            })
+            .collect();
         let connection = *options.choose(&mut rand::rng()).unwrap();
-        let going_forward = connection.station_a()==*from;
-        TrainPos::Enroute{ connection:connection.clone(), interpolation: if going_forward {0.0} else{1.0}, going_forward }
+        let going_forward = connection.station_a() == *from;
+        TrainPos::Enroute {
+            connection: connection.clone(),
+            interpolation: if going_forward { 0.0 } else { 1.0 },
+            going_forward,
+        }
     }
-    fn next_train_path_by_route(from:&StationId,to:&StationId,static_elements:&[Element])->TrainPos{
-        println!("  from {} to {}",from,to);
-        let connection:DrawingPath = static_elements.iter().filter_map(|v| match v{
-            Element::Path(drawing_path) => Some(drawing_path),
-            Element::Circle { .. } => None,
-            Element::Text { .. } => None,
-        }).find(|v| {
-            (v.station_a()==*from && v.station_b()==*to) 
-            || (v.station_b()==*from && v.station_a()==*to)
-        }).unwrap().clone();
-        let going_forward = connection.station_a()==*from;
-        TrainPos::Enroute{ connection , interpolation: if going_forward {0.0} else {1.0},going_forward}
+    fn next_train_path_by_route(
+        from: &StationId,
+        to: &StationId,
+        static_elements: &[Element],
+    ) -> TrainPos {
+        println!("  from {} to {}", from, to);
+        let connection: DrawingPath = static_elements
+            .iter()
+            .filter_map(|v| match v {
+                Element::Path(drawing_path) => Some(drawing_path),
+                Element::Circle { .. } => None,
+                Element::Text { .. } => None,
+            })
+            .find(|v| {
+                (v.station_a() == *from && v.station_b() == *to)
+                    || (v.station_b() == *from && v.station_a() == *to)
+            })
+            .unwrap()
+            .clone();
+        let going_forward = connection.station_a() == *from;
+        TrainPos::Enroute {
+            connection,
+            interpolation: if going_forward { 0.0 } else { 1.0 },
+            going_forward,
+        }
     }
 }

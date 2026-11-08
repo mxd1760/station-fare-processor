@@ -3,8 +3,7 @@ use std::{collections::HashMap, time::Duration};
 use eframe::egui;
 
 use crate::{
-    map::StationMap,
-    simulator::{
+    map::{StationMap, TrainConfiguration}, simulator::{
         actors::Actor,
         drawable_elements::{DrawingPath, Element, Point},
         simulator_util::solve_station_positioning,
@@ -100,7 +99,11 @@ impl SimulationApp {
         }
     }
 
-    pub fn from_station_map(map: &StationMap) -> Self {
+    pub fn from_station_map(map: &StationMap,cfg_schema:Option<&String>) -> Self {
+        let trains:&Vec<TrainConfiguration> = match cfg_schema{
+            Some(name) => &map.train_cfg_schema.get(name).unwrap().trains,
+            None => &map.train_cfg_schema.get("one").unwrap().trains,
+        };
         let mut elements = Vec::new();
         let positions: HashMap<String, Point> = solve_station_positioning(map);
 
@@ -135,11 +138,16 @@ impl SimulationApp {
                 }));
             }
         }
-        let train = Actor::train_from(elements.last().unwrap()).unwrap();
+
+        let mut actors = vec![];
+        for train in trains{
+            let route = map.routes.get(&train.route_id).unwrap();
+            actors.push(Actor::train_from_config_and_route(&train, &route).unwrap());
+        }
 
         Self {
             static_elements: elements,
-            actors: vec![train],
+            actors,
         }
     }
 }

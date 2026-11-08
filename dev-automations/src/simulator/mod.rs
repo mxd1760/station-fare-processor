@@ -2,12 +2,12 @@ use std::path::PathBuf;
 
 use crate::{map::load_map, simulator::simulation_app::SimulationApp};
 
-mod actors;
+pub mod actors;
 mod drawable_elements;
 mod simulation_app;
 mod simulator_util;
 
-pub fn main(path_arg: Option<&PathBuf>) -> eframe::Result {
+pub fn main(path_arg: Option<&PathBuf>,config: Option<&String>) -> eframe::Result {
     let options = eframe::NativeOptions::default();
     let path = if let Some(p) = path_arg {
         p
@@ -19,6 +19,6 @@ pub fn main(path_arg: Option<&PathBuf>) -> eframe::Result {
     eframe::run_native(
         "Station Fare Processor Simulation",
         options,
-        Box::new(|_cc| Ok(Box::new(SimulationApp::from_station_map(&station_map)))),
+        Box::new(|_cc| Ok(Box::new(SimulationApp::from_station_map(&station_map,config)))),
     )
 }
