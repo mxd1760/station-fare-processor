@@ -419,8 +419,7 @@ impl Actor {
         from: &StationId,
         to: &StationId,
         static_elements: &[Element],
-    ) -> (TrainPos,String) {
-        
+    ) -> (TrainPos, String) {
         let connection: DrawingPath = static_elements
             .iter()
             .filter_map(|v| match v {
@@ -435,11 +434,14 @@ impl Actor {
             .unwrap()
             .clone();
         let going_forward = connection.station_a() == *from;
-        (TrainPos::Enroute {
-            connection,
-            interpolation: if going_forward { 0.0 } else { 1.0 },
-            going_forward,
-        },format!("from {} to {}", from, to))
+        (
+            TrainPos::Enroute {
+                connection,
+                interpolation: if going_forward { 0.0 } else { 1.0 },
+                going_forward,
+            },
+            format!("from {} to {}", from, to),
+        )
     }
 
     pub fn info_title(&self) -> String {

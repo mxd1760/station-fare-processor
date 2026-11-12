@@ -160,39 +160,53 @@ impl eframe::App for SimulationApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if self.show_info_panel {
             egui::Panel::right("info").show(ui, |ui| {
-                ui.label(egui::RichText::new("Trains").size(18.0).strong());
-                ui.indent("Trains",|ui|
-                {
-                    self.actors
-                    .iter()
-                    .filter(|v| matches!(v, Actor::Train { .. }))
-                    .for_each(|train| {
-                        let (id, color) = match train {
-                                Actor::Train { id, color, .. } => (id, color),
-                                Actor::Passenger { .. } => unreachable!(),
-                        };
-                        ui.horizontal(|ui| {
-                            ui.label(egui::RichText::new(&train.info_title()).size(14.0).strong());
-                            
-                            let (rect, _) = ui
-                                .allocate_exact_size(egui::vec2(12.0, 12.0), egui::Sense::hover());
-                            ui.painter()
-                                .circle_filled(rect.center(), 6.0, color.unwrap());
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    egui::CollapsingHeader::new(egui::RichText::new("Trains").size(18.0).strong())
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            self.actors
+                                .iter()
+                                .filter(|v| matches!(v, Actor::Train { .. }))
+                                .for_each(|train| {
+                                    let (id, color) = match train {
+                                        Actor::Train { id, color, .. } => (id, color),
+                                        Actor::Passenger { .. } => unreachable!(),
+                                    };
+                                    ui.horizontal(|ui| {
+                                        ui.label(
+                                            egui::RichText::new(&train.info_title())
+                                                .size(14.0)
+                                                .strong(),
+                                        );
+
+                                        let (rect, _) = ui.allocate_exact_size(
+                                            egui::vec2(12.0, 12.0),
+                                            egui::Sense::hover(),
+                                        );
+                                        ui.painter().circle_filled(
+                                            rect.center(),
+                                            6.0,
+                                            color.unwrap(),
+                                        );
+                                    });
+                                    ui.indent(id, |ui| {
+                                        ui.label(&train.info_subtitle());
+                                    });
+                                });
                         });
-                        ui.indent(id,|ui|{
-                            ui.label(&train.info_subtitle());
-                        });
-                    });
-                });
-                ui.label(egui::RichText::new("Passengers").size(18.0).strong());
-                ui.indent("Passengers",|ui|{
-                    self.actors
-                    .iter()
-                    .filter(|v| matches!(v, Actor::Passenger { .. }))
-                    .for_each(|_passenger| {
-                        //TODO
+                    egui::CollapsingHeader::new(
+                        egui::RichText::new("Passengers").size(18.0).strong(),
+                    )
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        self.actors
+                            .iter()
+                            .filter(|v| matches!(v, Actor::Passenger { .. }))
+                            .for_each(|_passenger| {
+                                //TODO
+                            })
                     })
-                })
+                });
             });
         }
 
