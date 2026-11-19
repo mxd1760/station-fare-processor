@@ -1,7 +1,11 @@
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 
 use eframe::egui;
+use rand::RngExt;
 
+use crate::map::Route;
+use crate::simulator::actors::RouteMode;
 use crate::{map::StationMap, simulator::drawable_elements::Point};
 
 // TODO: BENCHMARK ME
@@ -269,4 +273,117 @@ pub fn find_route_dijkstra(
     route.reverse();
 
     Some(route)
+}
+
+
+pub fn passenger_route_dijkstra(
+    routes: &[&Route],
+    from: &StationId,
+    to: &StationId,
+) -> Option<Vec<StationId>> {
+    if from == to {
+        return Some(vec![from.clone()]);
+    }
+
+    // Build a directed adjacency list from configured train services.
+    let mut graph: HashMap<StationId, Vec<StationId>> = HashMap::new();
+
+    for route in routes {
+        match route.mode {
+            RouteMode::LoopRoute => {
+                // Loop routes only operate in their configured direction.
+                for pair in route.stations.windows(2) {
+                    graph.entry(pair[0].clone())
+                        .or_default()
+                        .push(pair[1].clone());
+                }
+            }
+
+            RouteMode::LinearRoute => {
+                // Linear routes operate in both directions.
+                for pair in route.stations.windows(2) {
+                    graph.entry(pair[0].clone())
+                        .or_default()
+                        .push(pair[1].clone());
+
+                    graph.entry(pair[1].clone())
+                        .or_default()
+                        .push(pair[0].clone());
+                }
+            }
+
+            RouteMode::RandomRoute | RouteMode::RandomConnection => {
+                // Random services are not guaranteed services.
+                continue;
+            }
+        }
+    }
+
+    // Dijkstra's algorithm.
+    let mut distances: HashMap<StationId, usize> = HashMap::new();
+    let mut previous: HashMap<StationId, StationId> = HashMap::new();
+
+    let mut queue: BinaryHeap<Reverse<(usize, StationId)>> =
+        BinaryHeap::new();
+
+    distances.insert(from.clone(), 0);
+    queue.push(Reverse((0, from.clone())));
+
+    while let Some(Reverse((distance, current))) = queue.pop() {
+        if current == *to {
+            break;
+        }
+
+        // Ignore outdated queue entries.
+        if distance > *distances.get(&current).unwrap_or(&usize::MAX) {
+            continue;
+        }
+
+        if let Some(neighbors) = graph.get(&current) {
+            for neighbor in neighbors {
+                let new_distance = distance + 1;
+
+                if new_distance < *distances.get(neighbor).unwrap_or(&usize::MAX) {
+                    distances.insert(neighbor.clone(), new_distance);
+                    previous.insert(neighbor.clone(), current.clone());
+
+                    queue.push(Reverse((
+                        new_distance,
+                        neighbor.clone(),
+                    )));
+                }
+            }
+        }
+    }
+
+    // No valid route was found.
+    if !distances.contains_key(to) {
+        return None;
+    }
+
+    // Reconstruct the path.
+    let mut path = vec![to.clone()];
+    let mut current = to.clone();
+
+    while current != *from {
+        current = previous.get(&current)?.clone();
+        path.push(current.clone());
+    }
+
+    path.reverse();
+
+    Some(path)
+}
+
+
+
+pub fn random_id(length: usize) -> String {
+    let mut rng = rand::rng();
+
+    (0..length)
+        .map(|_| {
+            let n = rng.random_range(0..36);
+            char::from_digit(n, 36).unwrap()
+        })
+        .collect()
 }

@@ -1,13 +1,13 @@
+use std::collections::{HashMap, HashSet};
+
 use chrono::prelude::*;
 use eframe::egui::{self, Color32, Painter};
-use rand::seq::IndexedRandom;
+use rand::seq::{IndexedRandom, IteratorRandom};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::{Route, TrainConfiguration},
-    simulator::{
-        drawable_elements::{DrawingPath, Element, Point, StationId},
-        simulator_util::{draw_rotated_rect, find_route_dijkstra},
+    map::{Route, TrainConfiguration}, simulator::{
+        actors::PassengerPos::AtStation, drawable_elements::{DrawingPath, Element, Point, StationId}, simulator_util::{draw_rotated_rect, find_route_dijkstra, passenger_route_dijkstra},
     },
 };
 
@@ -252,7 +252,10 @@ impl Actor {
                 destination_station: _,
                 route: _,
                 route_index: _,
-            } => todo!(),
+            } => {
+                // todo!()
+                // println!("TODO: passenger update");
+            },
         }
     }
     pub fn draw(&self, painter: &Painter, rect: &egui::Rect) {
@@ -447,7 +450,7 @@ impl Actor {
     pub fn info_title(&self) -> String {
         match self {
             Actor::Train { id, route_name, .. } => format!("{} on {}", id, route_name),
-            Actor::Passenger { .. } => todo!(),
+            Actor::Passenger { id, .. } => format!("{}",id),
         }
     }
     pub fn info_subtitle(&self) -> String {
@@ -455,7 +458,34 @@ impl Actor {
             Actor::Train {
                 connection_name, ..
             } => format!("On Connection {}", connection_name),
-            Actor::Passenger { .. } => todo!(),
+            Actor::Passenger { route,.. } => {
+                format!("I exist!\nroute:{:?}",route)
+            },
+        }
+    }
+
+    pub fn new_passenger(id:String,card_id:String,train_routes:&HashMap<String,Route>)->Self{
+        let routes:Vec<&Route> = train_routes.values().collect();
+        let mut stations:HashSet<String> = HashSet::new();
+        for route in &routes{
+            for station in &route.stations{
+                stations.insert(station.clone());
+            }
+        }
+        let destination_station = stations.iter().choose(&mut rand::rng()).unwrap();
+        let mut start_station = stations.iter().choose(&mut rand::rng()).unwrap();
+        while destination_station == start_station{
+            start_station = stations.iter().choose(&mut rand::rng()).unwrap();
+        }
+
+        
+        Self::Passenger { 
+            id, 
+            card_id, 
+            position: AtStation(start_station.clone(), Point {x:0.0,y:0.0}), 
+            destination_station:destination_station.clone(), 
+            route: passenger_route_dijkstra(&routes,start_station,destination_station).unwrap(), 
+            route_index: 0
         }
     }
 }

@@ -1,21 +1,22 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, time::{Duration, Instant}};
 
 use eframe::egui;
 
 use crate::{
-    map::{StationMap, TrainConfiguration},
-    simulator::{
-        actors::Actor,
-        drawable_elements::{DrawingPath, Element, Point},
-        simulator_util::solve_station_positioning,
+    map::{Route, StationMap, TrainConfiguration}, simulator::{
+        actors::Actor, drawable_elements::{DrawingPath, Element, Point}, simulator_util::{random_id, solve_station_positioning},
     },
 };
 
-#[derive(Default)]
+const PASSENGER_SPAWN_DELAY:u64 = 3;
+
+
 pub struct SimulationApp {
     static_elements: Vec<Element>,
     actors: Vec<Actor>,
     show_info_panel: bool,
+    train_routes:HashMap<String,Route>,
+    passenger_spawn_timer:Instant,
 }
 
 impl SimulationApp {
@@ -99,6 +100,8 @@ impl SimulationApp {
             ],
             actors: vec![],
             show_info_panel: true,
+            train_routes: HashMap::new(),
+            passenger_spawn_timer: Instant::now(),
         }
     }
 
@@ -152,7 +155,15 @@ impl SimulationApp {
             static_elements: elements,
             actors,
             show_info_panel: true,
+            train_routes: map.routes.clone(),
+            passenger_spawn_timer: Instant::now(),
         }
+    }
+}
+
+impl Default for SimulationApp{
+    fn default() -> Self {
+        Self { static_elements: Default::default(), actors: Default::default(), show_info_panel: Default::default(), train_routes: Default::default(), passenger_spawn_timer: Instant::now() }
     }
 }
 
@@ -202,8 +213,18 @@ impl eframe::App for SimulationApp {
                         self.actors
                             .iter()
                             .filter(|v| matches!(v, Actor::Passenger { .. }))
-                            .for_each(|_passenger| {
-                                //TODO
+                            .for_each(|passenger| {
+                                
+                                // ui.horizontal(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(&passenger.info_title())
+                                            .size(14.0)
+                                            .strong(),
+                                    );
+                                // });
+                                ui.indent(passenger.info_title(), |ui| {
+                                    ui.label(&passenger.info_subtitle());
+                                });
                             })
                     })
                 });
@@ -235,6 +256,13 @@ impl eframe::App for SimulationApp {
         for actor in &mut self.actors {
             actor.update(&self.static_elements);
         }
+        
+        if self.passenger_spawn_timer.elapsed() >= Duration::from_secs(PASSENGER_SPAWN_DELAY) {
+        self.actors.push(Actor::new_passenger(random_id(5),random_id(5),&self.train_routes));
+        self.passenger_spawn_timer = Instant::now();
+    }
+
+
         ctx.request_repaint_after(Duration::from_millis(50))
     }
 }

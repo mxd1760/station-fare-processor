@@ -28,7 +28,7 @@ pub struct TrainCfgSchema {
     pub trains: Vec<TrainConfiguration>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Route {
     pub name: String,
     pub mode: crate::simulator::actors::RouteMode,
