@@ -6,8 +6,11 @@ use rand::seq::{IndexedRandom, IteratorRandom};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::{Route, TrainConfiguration}, simulator::{
-        actors::PassengerPos::AtStation, drawable_elements::{DrawingPath, Element, Point, StationId}, simulator_util::{draw_rotated_rect, find_route_dijkstra, passenger_route_dijkstra},
+    map::{Route, TrainConfiguration},
+    simulator::{
+        actors::PassengerPos::AtStation,
+        drawable_elements::{DrawingPath, Element, Point, StationId},
+        simulator_util::{draw_rotated_rect, find_route_dijkstra, passenger_route_dijkstra},
     },
 };
 
@@ -69,16 +72,24 @@ pub enum PassengerPos {
     AtStation(StationId, Point),
     // Roaming(Point),
 }
+#[derive(Debug)]
+pub enum ActorRequest {
+    None,
+    DumpPassengersAtStation(TrainId, StationId, Point),
+    PassengerRequestToBoardTrainFromTo(PassengerId, StationId, StationId),
+    DeleteTrain(TrainId),
+    DeletePassenger(PassengerId),
+}
 
 impl Actor {
-    pub fn update(&mut self, static_elements: &Vec<Element>) {
+    pub fn update(&mut self, static_elements: &Vec<Element>) -> ActorRequest {
         match self {
             Actor::Train {
-                id: _,
+                id,
                 position,
                 route,
                 route_index,
-                passengers: _num_passengers,
+                passengers,
                 max_capacity: _,
                 color: _,
                 wait_counter,
@@ -97,7 +108,7 @@ impl Actor {
                         *interpolation - TRAIN_SPEED
                     };
                     if *interpolation > 1.0 {
-                        let new_position = match connection {
+                        let new_position_data = match connection {
                             DrawingPath::Line {
                                 start: _,
                                 end,
@@ -129,14 +140,23 @@ impl Actor {
                                     .collect::<Vec<&Point>>()
                                     .get(0)
                                     .unwrap();
-                                TrainPos::AtStation(end.0.clone(), station.clone())
+                                (end.0.clone(), station.clone())
                             }
                         };
+                        let new_position =
+                            TrainPos::AtStation(new_position_data.0.clone(), new_position_data.1);
 
                         *position = new_position;
                         *wait_counter = TRAIN_TICKS_AT_STATION;
+                        let out = id.to_string();
+                        self.valid_route_check(static_elements);
+                        ActorRequest::DumpPassengersAtStation(
+                            out,
+                            new_position_data.0,
+                            new_position_data.1,
+                        )
                     } else if *interpolation < 0.0 {
-                        let new_position = match connection {
+                        let new_position_data = match connection {
                             DrawingPath::Line {
                                 start,
                                 end: _,
@@ -168,12 +188,24 @@ impl Actor {
                                     .collect::<Vec<&Point>>()
                                     .get(0)
                                     .unwrap();
-                                TrainPos::AtStation(start.0.clone(), station.clone())
+                                (start.0.clone(), station.clone())
                             }
                         };
 
+                        let new_position =
+                            TrainPos::AtStation(new_position_data.0.clone(), new_position_data.1);
+
                         *position = new_position;
                         *wait_counter = TRAIN_TICKS_AT_STATION;
+                        let out = id.to_string();
+                        self.valid_route_check(static_elements);
+                        ActorRequest::DumpPassengersAtStation(
+                            out,
+                            new_position_data.0,
+                            new_position_data.1,
+                        )
+                    } else {
+                        ActorRequest::None
                     }
                 }
                 TrainPos::AtStation(here, _) => {
@@ -185,26 +217,6 @@ impl Actor {
                                 Self::next_train_path_by_random_choice(here, static_elements)
                             }
                             RouteMode::RandomRoute => {
-                                if route.len() == 0 || *route_index >= route.len() - 1 {
-                                    let mut to: StationId = here.clone();
-                                    while to == *here {
-                                        to = static_elements
-                                            .iter()
-                                            .filter_map(|v| match v {
-                                                Element::Path(_) => None,
-                                                Element::Circle { name, .. } => Some(name.clone()),
-                                                Element::Text { .. } => None,
-                                            })
-                                            .collect::<Vec<StationId>>()
-                                            .choose(&mut rand::rng())
-                                            .unwrap()
-                                            .to_string();
-                                    }
-                                    *route_name = format!("to {}", to);
-                                    *route =
-                                        find_route_dijkstra(static_elements, here, &to).unwrap();
-                                    *route_index = 0;
-                                }
                                 *route_index += 1;
                                 let out = Self::next_train_path_by_route(
                                     here,
@@ -215,10 +227,6 @@ impl Actor {
                                 out.0
                             }
                             RouteMode::LinearRoute => {
-                                if *route_index >= route.len() - 1 {
-                                    *route_index = 0;
-                                    route.reverse();
-                                }
                                 *route_index += 1;
                                 let out = Self::next_train_path_by_route(
                                     here,
@@ -229,9 +237,6 @@ impl Actor {
                                 out.0
                             }
                             RouteMode::LoopRoute => {
-                                if *route_index >= route.len() - 1 {
-                                    *route_index = 0;
-                                }
                                 *route_index += 1;
                                 let out = Self::next_train_path_by_route(
                                     here,
@@ -243,21 +248,97 @@ impl Actor {
                             }
                         }
                     }
+                    ActorRequest::None
                 }
             },
             Actor::Passenger {
-                id: _,
+                id,
                 card_id: _,
-                position: _,
-                destination_station: _,
-                route: _,
-                route_index: _,
-            } => {
-                // todo!()
-                // println!("TODO: passenger update");
+                position,
+                destination_station,
+                route,
+                route_index,
+            } => match position {
+                PassengerPos::OnTrain(_) => ActorRequest::None,
+                AtStation(sid, _) => {
+                    if sid == destination_station {
+                        return ActorRequest::DeletePassenger(id.to_string());
+                    } else if sid == route.get(*route_index).unwrap() {
+                        *route_index += 1;
+                    }
+                    ActorRequest::PassengerRequestToBoardTrainFromTo(
+                        id.to_string(),
+                        sid.to_string(),
+                        route.get(*route_index).unwrap().clone(),
+                    )
+                }
             },
         }
     }
+    pub fn valid_route_check(&mut self, static_elements: &[Element]) {
+        match self {
+            Actor::Train {
+                id,
+                color,
+                position,
+                route,
+                route_index,
+                passengers,
+                max_capacity,
+                wait_counter,
+                route_mode,
+                route_name,
+                connection_name,
+            } => match route_mode {
+                RouteMode::RandomConnection => (),
+                RouteMode::RandomRoute => {
+                    if route.len() == 0 || *route_index >= route.len() - 1 {
+                        let here = match position {
+                            TrainPos::Enroute { .. } => todo!(),
+                            TrainPos::AtStation(here, point) => here,
+                        };
+                        let mut to: StationId = here.clone();
+                        while to == *here {
+                            to = static_elements
+                                .iter()
+                                .filter_map(|v| match v {
+                                    Element::Path(_) => None,
+                                    Element::Circle { name, .. } => Some(name.clone()),
+                                    Element::Text { .. } => None,
+                                })
+                                .collect::<Vec<StationId>>()
+                                .choose(&mut rand::rng())
+                                .unwrap()
+                                .to_string();
+                        }
+                        *route_name = format!("to {}", to);
+                        *route = find_route_dijkstra(static_elements, here, &to).unwrap();
+                        *route_index = 0;
+                    }
+                }
+                RouteMode::LinearRoute => {
+                    if *route_index >= route.len() - 1 {
+                        *route_index = 0;
+                        route.reverse();
+                    }
+                }
+                RouteMode::LoopRoute => {
+                    if *route_index >= route.len() - 1 {
+                        *route_index = 0;
+                    }
+                }
+            },
+            Actor::Passenger {
+                id,
+                card_id,
+                position,
+                destination_station,
+                route,
+                route_index,
+            } => todo!(),
+        }
+    }
+
     pub fn draw(&self, painter: &Painter, rect: &egui::Rect) {
         match self {
             Actor::Train {
@@ -450,7 +531,7 @@ impl Actor {
     pub fn info_title(&self) -> String {
         match self {
             Actor::Train { id, route_name, .. } => format!("{} on {}", id, route_name),
-            Actor::Passenger { id, .. } => format!("{}",id),
+            Actor::Passenger { id, .. } => format!("{}", id),
         }
     }
     pub fn info_subtitle(&self) -> String {
@@ -458,34 +539,41 @@ impl Actor {
             Actor::Train {
                 connection_name, ..
             } => format!("On Connection {}", connection_name),
-            Actor::Passenger { route,.. } => {
-                format!("I exist!\nroute:{:?}",route)
-            },
+            Actor::Passenger { route, .. } => {
+                format!("I exist!\nroute:{:?}", route)
+            }
         }
     }
 
-    pub fn new_passenger(id:String,card_id:String,train_routes:&HashMap<String,Route>)->Self{
-        let routes:Vec<&Route> = train_routes.values().collect();
-        let mut stations:HashSet<String> = HashSet::new();
-        for route in &routes{
-            for station in &route.stations{
+    pub fn new_passenger(
+        id: String,
+        card_id: String,
+        train_routes: &HashMap<String, Route>,
+        station_points: &HashMap<String, Point>,
+    ) -> Self {
+        let routes: Vec<&Route> = train_routes.values().collect();
+        let mut stations: HashSet<String> = HashSet::new();
+        for route in &routes {
+            for station in &route.stations {
                 stations.insert(station.clone());
             }
         }
         let destination_station = stations.iter().choose(&mut rand::rng()).unwrap();
         let mut start_station = stations.iter().choose(&mut rand::rng()).unwrap();
-        while destination_station == start_station{
+        while destination_station == start_station {
             start_station = stations.iter().choose(&mut rand::rng()).unwrap();
         }
 
-        
-        Self::Passenger { 
-            id, 
-            card_id, 
-            position: AtStation(start_station.clone(), Point {x:0.0,y:0.0}), 
-            destination_station:destination_station.clone(), 
-            route: passenger_route_dijkstra(&routes,start_station,destination_station).unwrap(), 
-            route_index: 0
+        Self::Passenger {
+            id,
+            card_id,
+            position: AtStation(
+                start_station.clone(),
+                station_points.get(start_station).unwrap().clone(),
+            ),
+            destination_station: destination_station.clone(),
+            route: passenger_route_dijkstra(&routes, start_station, destination_station).unwrap(),
+            route_index: 0,
         }
     }
 }

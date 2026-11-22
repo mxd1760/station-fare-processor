@@ -275,7 +275,6 @@ pub fn find_route_dijkstra(
     Some(route)
 }
 
-
 pub fn passenger_route_dijkstra(
     routes: &[&Route],
     from: &StationId,
@@ -293,7 +292,8 @@ pub fn passenger_route_dijkstra(
             RouteMode::LoopRoute => {
                 // Loop routes only operate in their configured direction.
                 for pair in route.stations.windows(2) {
-                    graph.entry(pair[0].clone())
+                    graph
+                        .entry(pair[0].clone())
                         .or_default()
                         .push(pair[1].clone());
                 }
@@ -302,11 +302,13 @@ pub fn passenger_route_dijkstra(
             RouteMode::LinearRoute => {
                 // Linear routes operate in both directions.
                 for pair in route.stations.windows(2) {
-                    graph.entry(pair[0].clone())
+                    graph
+                        .entry(pair[0].clone())
                         .or_default()
                         .push(pair[1].clone());
 
-                    graph.entry(pair[1].clone())
+                    graph
+                        .entry(pair[1].clone())
                         .or_default()
                         .push(pair[0].clone());
                 }
@@ -323,8 +325,7 @@ pub fn passenger_route_dijkstra(
     let mut distances: HashMap<StationId, usize> = HashMap::new();
     let mut previous: HashMap<StationId, StationId> = HashMap::new();
 
-    let mut queue: BinaryHeap<Reverse<(usize, StationId)>> =
-        BinaryHeap::new();
+    let mut queue: BinaryHeap<Reverse<(usize, StationId)>> = BinaryHeap::new();
 
     distances.insert(from.clone(), 0);
     queue.push(Reverse((0, from.clone())));
@@ -347,10 +348,7 @@ pub fn passenger_route_dijkstra(
                     distances.insert(neighbor.clone(), new_distance);
                     previous.insert(neighbor.clone(), current.clone());
 
-                    queue.push(Reverse((
-                        new_distance,
-                        neighbor.clone(),
-                    )));
+                    queue.push(Reverse((new_distance, neighbor.clone())));
                 }
             }
         }
@@ -375,8 +373,6 @@ pub fn passenger_route_dijkstra(
     Some(path)
 }
 
-
-
 pub fn random_id(length: usize) -> String {
     let mut rng = rand::rng();
 
@@ -386,4 +382,18 @@ pub fn random_id(length: usize) -> String {
             char::from_digit(n, 36).unwrap()
         })
         .collect()
+}
+
+pub fn draw_passenger_count(painter: &egui::Painter, position: egui::Pos2, count: usize) {
+    let radius = 10.0;
+
+    painter.circle_filled(position, radius, egui::Color32::BLUE);
+
+    painter.text(
+        position,
+        egui::Align2::CENTER_CENTER,
+        count.to_string(),
+        egui::FontId::proportional(12.0),
+        egui::Color32::WHITE,
+    );
 }
