@@ -89,12 +89,12 @@ impl Actor {
                 position,
                 route,
                 route_index,
-                passengers,
+                passengers: _,
                 max_capacity: _,
                 color: _,
                 wait_counter,
                 route_mode,
-                route_name,
+                route_name: _,
                 connection_name,
             } => match position {
                 TrainPos::Enroute {
@@ -278,24 +278,24 @@ impl Actor {
     pub fn valid_route_check(&mut self, static_elements: &[Element]) {
         match self {
             Actor::Train {
-                id,
-                color,
+                id: _,
+                color: _,
                 position,
                 route,
                 route_index,
-                passengers,
-                max_capacity,
-                wait_counter,
+                passengers: _,
+                max_capacity: _,
+                wait_counter: _,
                 route_mode,
                 route_name,
-                connection_name,
+                connection_name: _,
             } => match route_mode {
                 RouteMode::RandomConnection => (),
                 RouteMode::RandomRoute => {
                     if route.len() == 0 || *route_index >= route.len() - 1 {
                         let here = match position {
                             TrainPos::Enroute { .. } => todo!(),
-                            TrainPos::AtStation(here, point) => here,
+                            TrainPos::AtStation(here, _point) => here,
                         };
                         let mut to: StationId = here.clone();
                         while to == *here {
@@ -328,14 +328,7 @@ impl Actor {
                     }
                 }
             },
-            Actor::Passenger {
-                id,
-                card_id,
-                position,
-                destination_station,
-                route,
-                route_index,
-            } => todo!(),
+            Actor::Passenger {..} => todo!(),
         }
     }
 
